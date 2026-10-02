@@ -1,0 +1,28 @@
+{
+  "id": "/",
+  "name": "آرایشگاه رویال — رزرو آنلاین نوبت",
+  "short_name": "رویال",
+  "description": "سامانه هوشمند و مدرن رزرو آنلاین نوبت، یادآور هوشمند و پذیرش آرایشگاه رویال",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#121110",
+  "theme_color": "#1c1917",
+  "dir": "rtl",
+  "lang": "fa",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

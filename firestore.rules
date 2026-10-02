@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email in ['heiskottensbro@gmail.com', 'astrologistkotten@gmail.com', 'speakerkot10@gmail.com'] && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Admin collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        incoming().keys().hasAll(['id', 'role']) &&
+        incoming().id == userId &&
+        (incoming().role == 'client' || isAdmin()) &&
+        (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 128)) &&
+        (!('displayName' in incoming()) || (incoming().displayName is string && incoming().displayName.size() <= 100)) &&
+        (!('phoneNumber' in incoming()) || (incoming().phoneNumber is string && incoming().phoneNumber.size() <= 30)) &&
+        (!('photoURL' in incoming()) || (incoming().photoURL is string && incoming().photoURL.size() <= 500)) &&
+        (!('formulaNotes' in incoming()) || (incoming().formulaNotes is string && incoming().formulaNotes.size() <= 1000));
+
+      allow update: if (isOwner(userId) || isAdmin()) &&
+        isValidId(userId) &&
+        incoming().id == existing().id &&
+        (!incoming().diff(existing()).affectedKeys().hasAny(['role']) || isAdmin()) &&
+        (!('email' in incoming()) || (incoming().email is string && incoming().email.size() <= 128)) &&
+        (!('displayName' in incoming()) || (incoming().displayName is string && incoming().displayName.size() <= 100)) &&
+        (!('phoneNumber' in incoming()) || (incoming().phoneNumber is string && incoming().phoneNumber.size() <= 30)) &&
+        (!('photoURL' in incoming()) || (incoming().photoURL is string && incoming().photoURL.size() <= 500)) &&
+        (!('formulaNotes' in incoming()) || (incoming().formulaNotes is string && incoming().formulaNotes.size() <= 1000));
+
+      allow delete: if isAdmin();
+    }
+
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      allow get: if true;
+      allow list: if true;
+      
+      allow create: if isValidId(appointmentId) &&
+        incoming().keys().hasAll(['id', 'customerName', 'serviceName', 'status']) &&
+        incoming().id == appointmentId &&
+        incoming().customerName is string && incoming().customerName.size() <= 100 &&
+        incoming().serviceName is string && incoming().serviceName.size() <= 100 &&
+        incoming().status in ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'] &&
+        (!('userId' in incoming()) || (isSignedIn() && incoming().userId == request.auth.uid) || isAdmin()) &&
+        (!('customerPhone' in incoming()) || (incoming().customerPhone is string && incoming().customerPhone.size() <= 30));
+
+      allow update: if isValidId(appointmentId) &&
+        (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid) || (!('userId' in existing()))) &&
+        incoming().id == existing().id &&
+        incoming().status in ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'];
+
+      allow delete: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "آرایشگاه رویال — رزرو آنلاین نوبت",
+  "description": "سامانه هوشمند و مدرن رزرو آنلاین نوبت آرایشگاه، مدیریت مشتریان و نوبت‌دهی ۲۴ ساعته.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
